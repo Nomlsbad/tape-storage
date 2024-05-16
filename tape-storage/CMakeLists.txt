@@ -1,5 +1,5 @@
 #App
-set(APP_NAME cplus-template)
+set(APP_NAME tape-storage)
 
 set(APP_PATH "${CMAKE_CURRENT_LIST_DIR}/app")
 set(APP_SRC_PATH "${APP_PATH}/src")

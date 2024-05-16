@@ -35,10 +35,10 @@ jobs:
 
       - name: Build Project
         run: |
-          cmake --build build --target cplus-template
-          cmake --build build --target cplus-template-unit-tests
+          cmake --build build --target tape-storage
+          cmake --build build --target tape-storage-unit-tests
 
       - name: Test Project
         run: |
           cd build
-          ctest --extra-verbose -R cplus-template-unit-tests
+          ctest --extra-verbose -R tape-storage-unit-tests
