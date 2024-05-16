@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CMakeSharedSettings">
+    <configurations>
+      <configuration PROFILE_NAME="debug-gcc" ENABLED="true" GENERATION_DIR="builds/debug-gcc" CONFIG_NAME="Debug" TOOLCHAIN_NAME="gcc" />
+      <configuration PROFILE_NAME="release-gcc" ENABLED="true" GENERATION_DIR="builds/release-gcc" CONFIG_NAME="Release" TOOLCHAIN_NAME="gcc" />
+      <configuration PROFILE_NAME="debug-clang" ENABLED="true" GENERATION_DIR="builds/debug-clang" CONFIG_NAME="Debug" TOOLCHAIN_NAME="clang" />
+      <configuration PROFILE_NAME="release-clang" ENABLED="true" GENERATION_DIR="builds/release-clang" CONFIG_NAME="Release" TOOLCHAIN_NAME="clang" />
+    </configurations>
+  </component>
+</project>

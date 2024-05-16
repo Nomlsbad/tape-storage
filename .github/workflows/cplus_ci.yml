@@ -1,0 +1,44 @@
+name: C++ CI
+
+on:
+  pull_request:
+    branches: [ "main", "dev" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        build_type: [ Release ]
+        compiler: [ { c: gcc, cxx: g++ }, { c: clang-15, cxx: clang++-15 }]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.1.1
+
+      - name: Update clang
+        if: matrix.compiler.c == 'clang-15'
+        run : |
+          sudo apt update
+          sudo apt install clang-15 -y
+
+      - name: Configure Project
+        uses: threeal/cmake-action@v1.3.0
+        with:
+          generator: Ninja
+          c-compiler: ${{ matrix.compiler.c }}
+          cxx-compiler: ${{ matrix.compiler.cxx }}
+          options:
+            CMAKE_BUILD_TYPE=${{ matrix.build_type }}
+          run-build: false
+
+      - name: Build Project
+        run: |
+          cmake --build build --target cplus-template
+          cmake --build build --target cplus-template-unit-tests
+
+      - name: Test Project
+        run: |
+          cd build
+          ctest --extra-verbose -R cplus-template-unit-tests
