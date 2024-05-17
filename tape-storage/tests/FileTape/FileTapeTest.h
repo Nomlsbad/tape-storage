@@ -5,16 +5,9 @@ class FileTapeTest: public ::testing::Test
 {
 protected:
 
-    static void SetUpTestCase()
-    {
-        testTapePath = "/home/ilya/programming/test-tasks/tape-storage/tape-storage/tests/FileTape/testTape.txt";
-        writeTestTapePath =
-            "/home/ilya/programming/test-tasks/tape-storage/tape-storage/tests/FileTape/writeTestTape.txt";
-    }
-
-    static constexpr size_t size = 5;
-    inline static std::string testTapePath;
-    inline static std::string writeTestTapePath;
+    static constexpr std::string testsDir = TESTS_DIR;
+    static constexpr std::string testTapePath = testsDir + "/FileTape/testTape.txt";
+    static constexpr std::string writeTestTapePath = testsDir + "/FileTape/writeTestTape.txt";
 };
 
 #endif // TAPE_STORAGE_FILETAPE_TEST_H
