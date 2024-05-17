@@ -41,7 +41,7 @@ TEST_F(FileTapeTest, AfterSizeMinusOneStepsCantGoNext)
     while (tape.next()) { ++steps; }
     const bool hasNext = tape.hasNext();
 
-    EXPECT_EQ(steps, size - 1);
+    EXPECT_EQ(steps, tape.getSize() - 1);
     EXPECT_FALSE(hasNext);
 }
 
