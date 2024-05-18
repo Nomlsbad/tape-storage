@@ -26,6 +26,7 @@ public:
     virtual void write(int value) = 0;
 
     virtual size_t getSize() const = 0;
+    virtual size_t getPosition() const = 0;
 };
 
 

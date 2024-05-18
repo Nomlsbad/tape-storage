@@ -85,6 +85,11 @@ size_t FileTape::getSize() const noexcept
     return static_cast<size_t>(size_);
 }
 
+size_t FileTape::getPosition() const noexcept
+{
+    return static_cast<size_t>(position_);
+}
+
 void FileTape::updateCache()
 {
     const auto diff = position_ - bufferedPos_;
