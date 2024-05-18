@@ -35,6 +35,7 @@ public:
     void write(int value) override;
 
     size_t getSize() const noexcept override;
+    size_t getPosition() const noexcept override;
 
 private:
 
