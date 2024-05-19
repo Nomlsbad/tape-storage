@@ -68,8 +68,10 @@ private:
     using BufferPointer = Buffer::iterator;
 
     Buffer buffer_ {};
-    bool modified_ {false};
     SizeType bufferedPos_;
+    SizeType cashed {};
+
+    bool modified_ {false};
 };
 
 

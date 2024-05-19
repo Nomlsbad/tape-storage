@@ -10,7 +10,7 @@ using YTape::FileTape;
 
 FileTape::FileTape(const std::string& path)
     : fstream_(path)
-    , bufferedPos_(std::numeric_limits<SizeType>::min())
+    , bufferedPos_(-bufferSize)
 {
     if (fstream_.fail())
     {
@@ -94,7 +94,7 @@ size_t FileTape::getPosition() const noexcept
 void FileTape::updateCache()
 {
     const auto diff = position_ - bufferedPos_;
-    if (diff < 0 || diff >= wordSize)
+    if (diff < 0 || diff >= cashed)
     {
         store();
         load(diff);
@@ -104,32 +104,27 @@ void FileTape::updateCache()
 void FileTape::load(SizeType diff)
 {
     SizeType pos;
-    SizeType steps;
 
     if (diff < 0)
     {
-        pos = std::min<SizeType>(0, position_ - bufferSize + 1);
-        steps = std::min(bufferSize, position_ - pos);
+        pos = std::max<SizeType>(0, position_ - bufferSize + 1);
+        cashed = std::min(bufferSize, position_ - pos + 1);
     }
     else
     {
         pos = position_;
-        steps = std::min(bufferSize, size_ - pos);
+        cashed = std::min(bufferSize, size_ - pos);
     }
 
     fstream_.seekp(begin + pos * wordSize);
     bufferedPos_ = pos;
 
-    for (size_t i = 0; i < steps; ++i)
+    for (size_t i = 0; i < cashed; ++i)
     {
         char number[wordSize];
         fstream_.getline(number, wordSize, delim);
 
-        auto result = std::from_chars(number, number + wordSize, buffer_[i]);
-        if (result.ec != std::errc())
-        {
-            buffer_[i] = 0;
-        }
+        std::from_chars(number, number + wordSize, buffer_[i]);
     }
 }
 
@@ -139,8 +134,7 @@ void FileTape::store()
 
     fstream_.seekp(begin + bufferedPos_ * wordSize);
 
-    const auto steps = static_cast<size_t>(std::min(bufferSize, size_ - bufferedPos_));
-    for (size_t i = 0; i < steps; ++i)
+    for (size_t i = 0; i < cashed; ++i)
     {
         fstream_ << std::setw(wordSize - 1) << buffer_[i] << "\n";
     }
