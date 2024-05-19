@@ -4,15 +4,16 @@
 #include <charconv>
 #include <iomanip>
 #include <iostream>
+#include <limits>
 
 using YTape::FileTape;
 
 FileTape::FileTape(const std::string& path)
     : fstream_(path)
+    , bufferedPos_(std::numeric_limits<SizeType>::min())
 {
     if (fstream_.fail())
     {
-        std::cerr << "Can't open file: " << path << "\n";
         throw std::invalid_argument("Can't open file: " + path);
     }
 
@@ -22,7 +23,7 @@ FileTape::FileTape(const std::string& path)
     fstream_ << std::setfill('_') << std::left;
 }
 
- FileTape::~FileTape()
+FileTape::~FileTape()
 {
     store();
 }
@@ -48,6 +49,16 @@ void FileTape::rewind()
     position_ = 0;
 }
 
+bool FileTape::hasNext() const
+{
+    return position_ != size_ - 1;
+}
+
+bool FileTape::hasPrev() const
+{
+    return position_ != 0;
+}
+
 bool FileTape::read(int& value)
 {
     updateCache();
@@ -70,16 +81,6 @@ void FileTape::write(int value)
     modified_ = true;
 }
 
-bool FileTape::hasNext() const
-{
-    return position_ != size_ - 1;
-}
-
-bool FileTape::hasPrev() const
-{
-    return position_ != 0;
-}
-
 size_t FileTape::getSize() const noexcept
 {
     return static_cast<size_t>(size_);
@@ -93,25 +94,42 @@ size_t FileTape::getPosition() const noexcept
 void FileTape::updateCache()
 {
     const auto diff = position_ - bufferedPos_;
-    if (diff < 0 || diff > wordSize)
+    if (diff < 0 || diff >= wordSize)
     {
         store();
-        bufferedPos_ = position_;
-        load();
+        load(diff);
     }
 }
 
-void FileTape::load()
+void FileTape::load(SizeType diff)
 {
-    fstream_.seekp(begin + position_ * wordSize);
+    SizeType pos;
+    SizeType steps;
 
-    const auto steps = static_cast<size_t>(std::min(bufferSize, size_ - position_));
+    if (diff < 0)
+    {
+        pos = std::min<SizeType>(0, position_ - bufferSize + 1);
+        steps = std::min(bufferSize, position_ - pos);
+    }
+    else
+    {
+        pos = position_;
+        steps = std::min(bufferSize, size_ - pos);
+    }
+
+    fstream_.seekp(begin + pos * wordSize);
+    bufferedPos_ = pos;
+
     for (size_t i = 0; i < steps; ++i)
     {
         char number[wordSize];
         fstream_.getline(number, wordSize, delim);
 
-        std::from_chars(number, number + wordSize, buffer_[i]);
+        auto result = std::from_chars(number, number + wordSize, buffer_[i]);
+        if (result.ec != std::errc())
+        {
+            buffer_[i] = 0;
+        }
     }
 }
 
