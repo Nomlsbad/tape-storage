@@ -5,7 +5,6 @@
 
 #include <array>
 #include <fstream>
-#include <limits>
 
 namespace YTape
 {
@@ -56,7 +55,7 @@ private:
 
     void updateCache();
 
-    void load();
+    void load(SizeType diff);
     void store();
 
 private:
@@ -69,8 +68,10 @@ private:
     using BufferPointer = Buffer::iterator;
 
     Buffer buffer_ {};
+    SizeType bufferedPos_;
+    SizeType cashed {};
+
     bool modified_ {false};
-    SizeType bufferedPos_ {std::numeric_limits<SizeType>::max()};
 };
 
 
