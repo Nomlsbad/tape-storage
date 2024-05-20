@@ -40,6 +40,7 @@ public:
      *
      * @tparam Iter at least InputIterator. std::iterator_traits<Iter>::value_type would be casted to ITape*.
      */
+     // TODO: Add check for tapes sizes
     template<typename Iter>
     explicit TapeSorter(Iter begin, Iter end, size_t chunkLimit, Comparator comparator)
         : chunkLimit_(chunkLimit / sizeof(int))
