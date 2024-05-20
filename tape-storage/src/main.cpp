@@ -1,6 +1,7 @@
+#include "Config/Configuration.h"
+#include "Formatter/FileTapeFormatter.h"
 #include "Sorter/TapeSorter.h"
 #include "Tape/FileTape.h"
-#include "Formatter/FileTapeFormatter.h"
 
 #include <iostream>
 
@@ -8,6 +9,9 @@ using namespace YTape;
 
 int main()
 {
+    std::string projectPath = PROJECT_DIR;
+    Configuration::initialize(projectPath + "/config.json");
+
     std::string resourcesPath = RESOURCES_DIR;
     std::vector<ITape*> tapes = {
         new FileTape(resourcesPath + "/tmp/tmp-tape-1.txt"),
@@ -20,7 +24,8 @@ int main()
 
     try
     {
-        TapeSorter<std::greater<>> sorter(tapes.begin(), tapes.end(), 8);
+        size_t chunkLimit = Configuration::get<SystemConfig>("memory");
+        TapeSorter<std::greater<>> sorter(tapes.begin(), tapes.end(), chunkLimit);
         sorter.sort(in, out);
     } catch (const std::invalid_argument& e)
     {

@@ -1,0 +1,11 @@
+{
+  "tape": {
+    "readDelay": 100,
+    "writeDelay": 100,
+    "rewindDelay": 100,
+    "shiftDelay": 100
+  },
+  "system": {
+    "memory": 16
+  }
+}
