@@ -15,8 +15,7 @@ namespace YTape
 {
 
 /**
- * TapeSorter implements asynchronous sorting
- * for ITape's implementations.
+ * TapeSorter implements asynchronous sorting for ITape's implementations.
  *
  * @author Yurasov Ilia
  */
@@ -26,12 +25,16 @@ public:
 
     /**
      * TapeSorter's constructor.
-     * Make sure that [begin, end) has at lest 3 elements and chunkLimit >= sizeof(int)
+     * Make sure that [begin, end) has at lest 4 elements and chunkLimit >= sizeof(int).
      *
      * @tparam Iter at least InputIterator. std::iterator_traits<Iter>::value_type would be casted to ITape*.
+     *
      * @param begin first iterator in range.
      * @param end before the last iterator in range.
      * @param chunkLimit amount of bytes for inner chunk that takes parts of input and sorts it.
+     *
+     * @throws std::invalid_argument if chunkLimit less than sizeof(int)
+     * or [begin, end) has 3 or less elements.
      */
     template<typename Iter>
     explicit TapeSorter(Iter begin, Iter end, size_t chunkLimit)
@@ -58,6 +61,12 @@ public:
         }
     }
 
+    TapeSorter(const TapeSorter&) = delete;
+    TapeSorter& operator= (const TapeSorter&) = delete;
+
+    TapeSorter(TapeSorter&&) noexcept = default;
+    TapeSorter& operator= (TapeSorter&&) noexcept = default;
+
 public:
 
     /**
@@ -71,16 +80,25 @@ public:
         in.rewind();
         out.rewind();
 
-        auto maxMerging = getMaxMerging(in.getSize(), chunkLimit_);
-        auto hasMerged = std::async(&TapeSorter::doMerging, this, maxMerging);
-        auto hasRead = std::async(std::launch::async, &TapeSorter::readInput, this, &in);
+        ITape* tmp = nullptr;
+        while (mergedTapes_.try_pop(tmp))
+        {
+            tmp->rewind();
+            freeTapes_.push(tmp);
+        }
 
-        hasRead.wait();
-        hasMerged.wait();
+        auto maxMerging = getMaxMerging(in.getSize(), chunkLimit_);
+        auto mergingTask = std::async(&TapeSorter::doMerging, this, maxMerging);
+        auto readingTask = std::async(std::launch::async, &TapeSorter::readInput, this, &in);
+
+        readingTask.wait();
+        mergingTask.wait();
 
         ITape* tape = nullptr;
         mergedTapes_.pop(tape);
+
         Utility::copy(*tape, out);
+        mergedTapes_.push(tape);
     }
 
 private:
@@ -157,15 +175,9 @@ private:
         {
             releaseTasks(tasks);
 
-            if (block.out == nullptr && !freeTapes_.try_pop(block.out) && ddTape_ == nullptr) continue;
-            if (block.out == nullptr && ddTape_ != nullptr)
-            {
-                block.out = ddTape_;
-                ddTape_ = nullptr;
-            }
-
-            if (block.leftIn == nullptr && !mergedTapes_.try_pop(block.leftIn)) continue;
-            if (block.rightIn == nullptr && !mergedTapes_.try_pop(block.rightIn)) continue;
+            if (!popFree(block.out)) continue;
+            if (!popMerged(block.leftIn)) continue;
+            if (!popMerged(block.rightIn)) continue;
 
             auto mergeTask = std::async(&TapeSorter::merge, block);
             tasks.push_back(std::move(mergeTask));
@@ -173,13 +185,11 @@ private:
             block = MergeBlock();
         }
 
-        if (block.leftIn != nullptr)
-        {
-            mergedTapes_.push(block.leftIn);
-        }
+        if (block.out != nullptr) freeTapes_.push(block.out);
+        if (block.leftIn != nullptr) mergedTapes_.push(block.leftIn);
     }
 
-    bool popFreeTape(ITape*& tape)
+    bool popFree(ITape*& tape)
     {
         if (tape == nullptr && !freeTapes_.try_pop(tape) && ddTape_ == nullptr) return false;
         if (tape == nullptr && ddTape_ != nullptr)
@@ -187,6 +197,48 @@ private:
             std::swap(tape, ddTape_);
         }
         return true;
+    }
+
+    bool popMerged(ITape*& tape)
+    {
+        return tape != nullptr || mergedTapes_.try_pop(tape);
+    }
+
+    void releaseTasks(std::vector<Task>& tasks)
+    {
+        for (size_t i = 0; i < tasks.size(); ++i)
+        {
+            if (!isReadyOrDeffered(tasks[i])) continue;
+
+            finishTask(tasks[i]);
+
+            std::swap(tasks[i], tasks.back());
+            tasks.pop_back();
+        }
+    }
+
+    void finishTask(std::future<MergeBlock>& task)
+    {
+        if (!task.valid()) return;
+
+        auto [out, left, right] = task.get();
+
+        assert(left->getPosition() == 0);
+        assert(right->getPosition() == 0);
+        assert(out->getPosition() != 0);
+
+        mergedTapes_.push(out);
+        freeTapes_.push(right);
+        if (ddTape_ != nullptr)
+        {
+            freeTapes_.push(left);
+        }
+        else
+        {
+            ddTape_ = left;
+        }
+
+        ++mergingCounter_;
     }
 
     static MergeBlock merge(MergeBlock block)
@@ -242,44 +294,6 @@ private:
         return block;
     }
 
-    void releaseTasks(std::vector<Task>& tasks)
-    {
-        for (size_t i = 0; i < tasks.size(); ++i)
-        {
-            if (!isReadyOrDeffered(tasks[i])) continue;
-
-            finishTask(tasks[i]);
-
-            std::swap(tasks[i], tasks.back());
-            tasks.pop_back();
-        }
-    }
-
-    void finishTask(std::future<MergeBlock>& task)
-    {
-        if (!task.valid()) return;
-
-        auto [out, left, right] = task.get();
-
-        assert(left->getPosition() == 0);
-        assert(right->getPosition() == 0);
-        assert(out->getPosition() != 0);
-
-        if (ddTape_ == nullptr)
-        {
-            ddTape_ = left;
-        }
-        else
-        {
-            freeTapes_.push(left);
-        }
-
-        freeTapes_.push(right);
-        mergedTapes_.push(out);
-
-        ++mergingCounter_;
-    }
-
 private:
 
     using Queue = oneapi::tbb::concurrent_bounded_queue<ITape*>;
@@ -290,8 +304,8 @@ private:
     size_t chunkLimit_ {};
     std::ptrdiff_t availableTapes_ {};
 
-    size_t mergingCounter_ {};
     ITape* ddTape_ {};
+    size_t mergingCounter_ {};
 };
 
 } // namespace YTape
