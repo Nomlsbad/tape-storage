@@ -8,7 +8,7 @@ target_sources(${APP_NAME} INTERFACE ${APP_SOURCES} PUBLIC ${APP_INCLUDE})
 target_include_directories(${APP_NAME} PUBLIC ${APP_INCLUDE_PATH})
 
 target_link_libraries(${APP_NAME}
-        PRIVATE
+        PUBLIC
         TBB::tbb
         nlohmann_json::nlohmann_json
 )
