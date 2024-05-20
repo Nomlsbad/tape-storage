@@ -1,10 +1,5 @@
 add_executable(${TESTS_NAME} ${TESTS_SOURCES})
 
-target_include_directories(${TESTS_NAME}
-        PUBLIC
-        ${APP_INCLUDE_PATH}
-)
-
 target_link_libraries(${TESTS_NAME}
         PRIVATE
         GTest::gtest
