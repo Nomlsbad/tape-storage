@@ -2,6 +2,7 @@
 #define TAPE_STORAGE_FILETAPE_H
 
 #include "ITape.h"
+#include "Simulator/TapeHardwareSimulator.h"
 
 #include <array>
 #include <fstream>
@@ -15,6 +16,8 @@ class FileTape final: public ITape
 public:
 
     explicit FileTape(const std::string& path);
+    FileTape(const std::string& path, ITapeSimulator& simulator);
+
     ~FileTape() override;
 
 public:
@@ -43,9 +46,11 @@ private:
     std::fstream fstream_;
     SizeType size_ {};
     SizeType position_ {};
-    SizeType begin {};
+    SizeType begin_ {};
 
     std::string path;
+
+    ITapeSimulator& simulator_;
 
 public:
 
