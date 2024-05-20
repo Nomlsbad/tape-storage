@@ -17,8 +17,11 @@ namespace YTape
 /**
  * TapeSorter implements asynchronous sorting for ITape's implementations.
  *
+ * @tparam Comparator using for sorting in necessary order. std::less<> by default.
+ *
  * @author Yurasov Ilia
  */
+template<typename Comparator = std::less<>>
 class TapeSorter
 {
 public:
@@ -27,19 +30,21 @@ public:
      * TapeSorter's constructor.
      * Make sure that [begin, end) has at lest 4 elements and chunkLimit >= sizeof(int).
      *
-     * @tparam Iter at least InputIterator. std::iterator_traits<Iter>::value_type would be casted to ITape*.
-     *
      * @param begin first iterator in range.
      * @param end before the last iterator in range.
      * @param chunkLimit amount of bytes for inner chunk that takes parts of input and sorts it.
+     * @param comparator callable object that takes 2 ints and returns bool
      *
      * @throws std::invalid_argument if chunkLimit less than sizeof(int)
      * or [begin, end) has 3 or less elements.
+     *
+     * @tparam Iter at least InputIterator. std::iterator_traits<Iter>::value_type would be casted to ITape*.
      */
     template<typename Iter>
-    explicit TapeSorter(Iter begin, Iter end, size_t chunkLimit)
+    explicit TapeSorter(Iter begin, Iter end, size_t chunkLimit, Comparator comparator)
         : chunkLimit_(chunkLimit / sizeof(int))
         , availableTapes_(std::distance(begin, end))
+        , comparator_(std::move(comparator))
     {
         if (chunkLimit_ < 1)
         {
@@ -61,11 +66,28 @@ public:
         }
     }
 
+    /**
+     * TapeSorter's constructor.
+     * Make sure that [begin, end) has at lest 4 elements and chunkLimit >= sizeof(int).
+     * Comparator creates by default.
+     *
+     * @param begin first iterator in range.
+     * @param end before the last iterator in range.
+     * @param chunkLimit amount of bytes for inner chunk that takes parts of input and sorts it.
+     *
+     * @throws std::invalid_argument if chunkLimit less than sizeof(int)
+     * or [begin, end) has 3 or less elements.
+     *
+     * @tparam Iter at least InputIterator. std::iterator_traits<Iter>::value_type would be casted to ITape*.
+     */
+    template<typename Iter>
+    requires std::default_initializable<Comparator>
+    explicit TapeSorter(Iter begin, Iter end, size_t chunkLimit)
+        : TapeSorter(begin, end, chunkLimit, Comparator())
+    {}
+
     TapeSorter(const TapeSorter&) = delete;
     TapeSorter& operator= (const TapeSorter&) = delete;
-
-    TapeSorter(TapeSorter&&) noexcept = default;
-    TapeSorter& operator= (TapeSorter&&) noexcept = default;
 
 public:
 
@@ -103,10 +125,7 @@ public:
 
 private:
 
-    static size_t getMaxMerging(size_t tapeSize, size_t chunkSize)
-    {
-        return (tapeSize - 1) / chunkSize;
-    }
+    static size_t getMaxMerging(size_t tapeSize, size_t chunkSize) { return (tapeSize - 1) / chunkSize; }
 
 private:
 
@@ -131,7 +150,7 @@ private:
             auto last = chunk.end();
 
             loadChunk(in, first, last);
-            std::sort(first, last);
+            std::sort(first, last, comparator_);
 
             ITape* tape = nullptr;
             freeTapes_.pop(tape);
@@ -179,7 +198,7 @@ private:
             if (!popMerged(block.leftIn)) continue;
             if (!popMerged(block.rightIn)) continue;
 
-            auto mergeTask = std::async(&TapeSorter::merge, block);
+            auto mergeTask = std::async(&TapeSorter::merge, this, block);
             tasks.push_back(std::move(mergeTask));
 
             block = MergeBlock();
@@ -199,10 +218,7 @@ private:
         return true;
     }
 
-    bool popMerged(ITape*& tape)
-    {
-        return tape != nullptr || mergedTapes_.try_pop(tape);
-    }
+    bool popMerged(ITape*& tape) { return tape != nullptr || mergedTapes_.try_pop(tape); }
 
     void releaseTasks(std::vector<Task>& tasks)
     {
@@ -241,7 +257,7 @@ private:
         ++mergingCounter_;
     }
 
-    static MergeBlock merge(MergeBlock block)
+    MergeBlock merge(MergeBlock block)
     {
         auto [out, left, right] = block;
 
@@ -263,7 +279,7 @@ private:
             right->read(rValue);
 
             auto [value, position, tape] =
-                lValue < rValue ? std::tie(lValue, lPosition, left) : std::tie(rValue, rPosition, right);
+                comparator_(lValue, rValue) ? std::tie(lValue, lPosition, left) : std::tie(rValue, rPosition, right);
 
             out->write(value);
             out->next();
@@ -306,6 +322,8 @@ private:
 
     ITape* ddTape_ {};
     size_t mergingCounter_ {};
+
+    Comparator comparator_;
 };
 
 } // namespace YTape
