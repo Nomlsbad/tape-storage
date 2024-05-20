@@ -2,10 +2,16 @@
 <project version="4">
   <component name="CMakeSharedSettings">
     <configurations>
-      <configuration PROFILE_NAME="debug-gcc" ENABLED="true" GENERATION_DIR="builds/debug-gcc" CONFIG_NAME="Debug" TOOLCHAIN_NAME="gcc" GENERATION_OPTIONS="-DTBB_STRICT:BOOL=OFF -DTBB_TEST:BOOL=OFF" />
-      <configuration PROFILE_NAME="release-gcc" ENABLED="true" GENERATION_DIR="builds/release-gcc" CONFIG_NAME="Release" TOOLCHAIN_NAME="gcc" GENERATION_OPTIONS="-DTBB_STRICT:BOOL=OFF -DTBB_TEST:BOOL=OFF" />
-      <configuration PROFILE_NAME="debug-clang" ENABLED="true" GENERATION_DIR="builds/debug-clang" CONFIG_NAME="Debug" TOOLCHAIN_NAME="clang" GENERATION_OPTIONS="-DTBB_STRICT:BOOL=OFF -DTBB_TEST:BOOL=OFF" />
-      <configuration PROFILE_NAME="release-clang" ENABLED="true" GENERATION_DIR="builds/release-clang" CONFIG_NAME="Release" TOOLCHAIN_NAME="clang" GENERATION_OPTIONS="-DTBB_STRICT:BOOL=OFF -DTBB_TEST:BOOL=OFF" />
+      <configuration PROFILE_NAME="gcc-debug" ENABLED="true" GENERATION_DIR="builds/gcc-debug" CONFIG_NAME="Debug" TOOLCHAIN_NAME="gcc" GENERATION_OPTIONS="-DTBB_STRICT:BOOL=OFF -DTBB_TEST:BOOL=OFF" />
+      <configuration PROFILE_NAME="gcc-release" ENABLED="true" GENERATION_DIR="builds/gcc-release" CONFIG_NAME="Release" TOOLCHAIN_NAME="gcc" GENERATION_OPTIONS="-DTBB_STRICT:BOOL=OFF -DTBB_TEST:BOOL=OFF" />
+      <configuration PROFILE_NAME="gcc-asan" ENABLED="true" GENERATION_DIR="builds/gcc-asan" CONFIG_NAME="RelWithDebInfo" TOOLCHAIN_NAME="gcc" GENERATION_OPTIONS="-DTBB_STRICT:BOOL=OFF -DTBB_TEST:BOOL=OFF -DASAN:BOOL=ON" />
+      <configuration PROFILE_NAME="gcc-tsan" ENABLED="true" GENERATION_DIR="builds/gcc-tsan" CONFIG_NAME="RelWithDebInfo" TOOLCHAIN_NAME="gcc" GENERATION_OPTIONS="-DTBB_STRICT:BOOL=OFF -DTBB_TEST:BOOL=OFF -DTSAN:BOOL=ON -DTBB_SANITIZE:STRING=thread" />
+      <configuration PROFILE_NAME="gcc-ubsan" ENABLED="true" GENERATION_DIR="builds/gcc-ubsan" CONFIG_NAME="RelWithDebInfo" TOOLCHAIN_NAME="gcc" GENERATION_OPTIONS="-DTBB_STRICT:BOOL=OFF -DTBB_TEST:BOOL=OFF -DUBSAN:BOOL=ON" />
+      <configuration PROFILE_NAME="clang-debug" ENABLED="true" GENERATION_DIR="builds/clang-debug" CONFIG_NAME="Debug" TOOLCHAIN_NAME="clang" GENERATION_OPTIONS="-DTBB_STRICT:BOOL=OFF -DTBB_TEST:BOOL=OFF" />
+      <configuration PROFILE_NAME="clang-release" ENABLED="true" GENERATION_DIR="builds/clang-release" CONFIG_NAME="Release" TOOLCHAIN_NAME="clang" GENERATION_OPTIONS="-DTBB_STRICT:BOOL=OFF -DTBB_TEST:BOOL=OFF" />
+      <configuration PROFILE_NAME="clang-asan" ENABLED="true" GENERATION_DIR="builds/clang-asan" CONFIG_NAME="RelWithDebInfo" TOOLCHAIN_NAME="clang" GENERATION_OPTIONS="-DTBB_STRICT:BOOL=OFF -DTBB_TEST:BOOL=OFF -DASAN:BOOL=ON" />
+      <configuration PROFILE_NAME="clang-tsan" ENABLED="true" GENERATION_DIR="builds/clang-tsan" CONFIG_NAME="RelWithDebInfo" TOOLCHAIN_NAME="clang" GENERATION_OPTIONS="-DTBB_STRICT:BOOL=OFF -DTBB_TEST:BOOL=OFF -DTSAN:BOOL=ON -DTBB_SANITIZE:STRING=thread" />
+      <configuration PROFILE_NAME="clang-ubsan" ENABLED="true" GENERATION_DIR="builds/clang-ubsan" CONFIG_NAME="RelWithDebInfo" TOOLCHAIN_NAME="clang" GENERATION_OPTIONS="-DTBB_STRICT:BOOL=OFF -DTBB_TEST:BOOL=OFF -DUBSAN:BOOL=ON" />
     </configurations>
   </component>
 </project>

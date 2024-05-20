@@ -1,5 +1,5 @@
-#ifndef TAPE_STORAGE_TAPESORTER_H
-#define TAPE_STORAGE_TAPESORTER_H
+#ifndef TAPE_STORAGE_TAPE_SORTER_H
+#define TAPE_STORAGE_TAPE_SORTER_H
 
 #include "oneapi/tbb/concurrent_queue.h"
 #include "Tape/Utils.h"
@@ -7,6 +7,7 @@
 
 #include <cassert>
 #include <future>
+#include <iostream>
 #include <iterator>
 #include <sstream>
 
@@ -14,47 +15,79 @@ namespace YTape
 {
 
 /**
- * TapeSorter implements asynchronous sorting
- * for ITape's implementations.
+ * TapeSorter implements asynchronous sorting for ITape's implementations.
+ *
+ * @tparam Comparator using for sorting in necessary order. std::less<> by default.
  *
  * @author Yurasov Ilia
  */
+template<typename Comparator = std::less<>>
 class TapeSorter
 {
 public:
 
     /**
      * TapeSorter's constructor.
-     * Make shue that [begin, end) has at lest 3 elements and chunkLimit >= sizeof(int)
+     * Make sure that [begin, end) has at lest 4 elements and chunkLimit >= sizeof(int).
      *
-     * @tparam Iter at least InputIterator. std::iterator_traits<Iter>::value_type would be casted to ITape*.
      * @param begin first iterator in range.
      * @param end before the last iterator in range.
      * @param chunkLimit amount of bytes for inner chunk that takes parts of input and sorts it.
+     * @param comparator callable object that takes 2 ints and returns bool
+     *
+     * @throws std::invalid_argument if chunkLimit less than sizeof(int)
+     * or [begin, end) has 3 or less elements.
+     *
+     * @tparam Iter at least InputIterator. std::iterator_traits<Iter>::value_type would be casted to ITape*.
      */
     template<typename Iter>
-    explicit TapeSorter(Iter begin, Iter end, size_t chunkLimit)
+    explicit TapeSorter(Iter begin, Iter end, size_t chunkLimit, Comparator comparator)
         : chunkLimit_(chunkLimit / sizeof(int))
-        , awailableTapes_(std::distance(begin, end))
+        , availableTapes_(std::distance(begin, end))
+        , comparator_(std::move(comparator))
     {
         if (chunkLimit_ < 1)
         {
-            throw std::invalid_argument("chunckLimit is too small.");
+            throw std::invalid_argument("chunkLimit is too small.");
         }
 
-        if (awailableTapes_ < 3)
+        if (availableTapes_ < 4)
         {
             std::stringstream stringstream;
-            stringstream << awailableTapes_ << " tmp taps isn't enougt. It should be 3 at least.";
+            stringstream << availableTapes_ << " tmp taps isn't enough. It should be 4 at least.";
 
             throw std::invalid_argument(stringstream.str());
         }
 
-        for (auto it = begin; it < end; ++it)
+        ddTape_ = *begin;
+        for (auto it = std::next(begin); it < end; ++it)
         {
             freeTapes_.push(*it);
         }
     }
+
+    /**
+     * TapeSorter's constructor.
+     * Make sure that [begin, end) has at lest 4 elements and chunkLimit >= sizeof(int).
+     * Comparator creates by default.
+     *
+     * @param begin first iterator in range.
+     * @param end before the last iterator in range.
+     * @param chunkLimit amount of bytes for inner chunk that takes parts of input and sorts it.
+     *
+     * @throws std::invalid_argument if chunkLimit less than sizeof(int)
+     * or [begin, end) has 3 or less elements.
+     *
+     * @tparam Iter at least InputIterator. std::iterator_traits<Iter>::value_type would be casted to ITape*.
+     */
+    template<typename Iter>
+    requires std::default_initializable<Comparator>
+    explicit TapeSorter(Iter begin, Iter end, size_t chunkLimit)
+        : TapeSorter(begin, end, chunkLimit, Comparator())
+    {}
+
+    TapeSorter(const TapeSorter&) = delete;
+    TapeSorter& operator= (const TapeSorter&) = delete;
 
 public:
 
@@ -69,15 +102,30 @@ public:
         in.rewind();
         out.rewind();
 
-        auto hasReaded = std::async(std::launch::deferred, &TapeSorter::readInput, this, &in);
-        auto hasMerged = std::async(std::launch::async, &TapeSorter::doMerging, this, std::move(hasReaded));
+        ITape* tmp = nullptr;
+        while (mergedTapes_.try_pop(tmp))
+        {
+            tmp->rewind();
+            freeTapes_.push(tmp);
+        }
 
-        hasMerged.wait();
+        auto maxMerging = getMaxMerging(in.getSize(), chunkLimit_);
+        auto mergingTask = std::async(&TapeSorter::doMerging, this, maxMerging);
+        auto readingTask = std::async(std::launch::async, &TapeSorter::readInput, this, &in);
+
+        readingTask.wait();
+        mergingTask.wait();
 
         ITape* tape = nullptr;
         mergedTapes_.pop(tape);
+
         Utility::copy(*tape, out);
+        mergedTapes_.push(tape);
     }
+
+private:
+
+    static size_t getMaxMerging(size_t tapeSize, size_t chunkSize) { return (tapeSize - 1) / chunkSize; }
 
 private:
 
@@ -97,32 +145,18 @@ private:
         std::vector<int> chunk(chunkLimit_);
         assert(chunk.begin() != chunk.end());
 
-        Task helpingTask;
-
         do {
             auto first = chunk.begin();
             auto last = chunk.end();
 
             loadChunk(in, first, last);
-            std::sort(first, last);
-
-            finishTask(helpingTask);
+            std::sort(first, last, comparator_);
 
             ITape* tape = nullptr;
             freeTapes_.pop(tape);
-            storeChunk(tape, first, last);
 
-            // If it's true then other thread is blocked and is waiting for an element from the freeTape_.
-            // We own one tape and all other tapes are placed in the mergedTapes_. It means
-            // the size() call is safe and under this condition we need help with merging.
-            if (mergedTapes_.size() == awailableTapes_ - 1)
-            {
-                runHelpingTask(helpingTask, tape);
-            }
-            else
-            {
-                mergedTapes_.push(tape);
-            }
+            storeChunk(tape, first, last);
+            mergedTapes_.push(tape);
 
         } while (in->next());
     }
@@ -132,7 +166,7 @@ private:
     {
         auto iter = begin;
         in->read(*iter);
-        while (++iter != end || in->next())
+        while (++iter != end && in->next())
         {
             in->read(*iter);
         }
@@ -149,37 +183,42 @@ private:
         }
     }
 
-    void runHelpingTask(Task& task, ITape* out)
-    {
-        MergeBlock block;
-
-        block.out = out;
-        mergedTapes_.pop(block.leftIn);
-        mergedTapes_.pop(block.rightIn);
-
-        task = std::async(merge, block);
-    }
-
 private:
 
-    void doMerging(std::future<void> inputReaded)
+    void doMerging(size_t maxMerging)
     {
         std::vector<Task> tasks;
-        while (!isReady(inputReaded) || !tasks.empty())
-        {
-            MergeBlock block;
-            freeTapes_.pop(block.out);
-            mergedTapes_.pop(block.leftIn);
-            mergedTapes_.pop(block.rightIn);
+        MergeBlock block;
 
-            auto mergeTask = std::async(merge, block);
+        while (mergingCounter_ < maxMerging)
+        {
+            releaseTasks(tasks);
+
+            if (!popFree(block.out)) continue;
+            if (!popMerged(block.leftIn)) continue;
+            if (!popMerged(block.rightIn)) continue;
+
+            auto mergeTask = std::async(&TapeSorter::merge, this, block);
             tasks.push_back(std::move(mergeTask));
 
-            releaseTasks(tasks);
+            block = MergeBlock();
         }
 
-        inputReaded.wait();
+        if (block.out != nullptr) freeTapes_.push(block.out);
+        if (block.leftIn != nullptr) mergedTapes_.push(block.leftIn);
     }
+
+    bool popFree(ITape*& tape)
+    {
+        if (tape == nullptr && !freeTapes_.try_pop(tape) && ddTape_ == nullptr) return false;
+        if (tape == nullptr && ddTape_ != nullptr)
+        {
+            std::swap(tape, ddTape_);
+        }
+        return true;
+    }
+
+    bool popMerged(ITape*& tape) { return tape != nullptr || mergedTapes_.try_pop(tape); }
 
     void releaseTasks(std::vector<Task>& tasks)
     {
@@ -194,7 +233,31 @@ private:
         }
     }
 
-    static MergeBlock merge(MergeBlock block)
+    void finishTask(std::future<MergeBlock>& task)
+    {
+        if (!task.valid()) return;
+
+        auto [out, left, right] = task.get();
+
+        assert(left->getPosition() == 0);
+        assert(right->getPosition() == 0);
+        assert(out->getPosition() != 0);
+
+        mergedTapes_.push(out);
+        freeTapes_.push(right);
+        if (ddTape_ != nullptr)
+        {
+            freeTapes_.push(left);
+        }
+        else
+        {
+            ddTape_ = left;
+        }
+
+        ++mergingCounter_;
+    }
+
+    MergeBlock merge(MergeBlock block)
     {
         auto [out, left, right] = block;
 
@@ -216,7 +279,7 @@ private:
             right->read(rValue);
 
             auto [value, position, tape] =
-                lValue < rValue ? std::tie(lValue, lPosition, left) : std::tie(rValue, rPosition, right);
+                comparator_(lValue, rValue) ? std::tie(lValue, lPosition, left) : std::tie(rValue, rPosition, right);
 
             out->write(value);
             out->next();
@@ -249,32 +312,20 @@ private:
 
 private:
 
-    void finishTask(std::future<MergeBlock>& task)
-    {
-        if (!task.valid()) return;
-
-        auto [out, left, right] = task.get();
-
-        assert(left->getPosition() == 0);
-        assert(right->getPosition() == 0);
-        assert(out->getPosition() != 0);
-
-        freeTapes_.push(left);
-        freeTapes_.push(right);
-        mergedTapes_.push(out);
-    }
-
-private:
-
     using Queue = oneapi::tbb::concurrent_bounded_queue<ITape*>;
 
-    size_t chunkLimit_;
-    std::ptrdiff_t awailableTapes_;
+    Queue freeTapes_ {};
+    Queue mergedTapes_ {};
 
-    Queue freeTapes_;
-    Queue mergedTapes_;
+    size_t chunkLimit_ {};
+    std::ptrdiff_t availableTapes_ {};
+
+    ITape* ddTape_ {};
+    size_t mergingCounter_ {};
+
+    Comparator comparator_;
 };
 
 } // namespace YTape
 
-#endif // TAPE_STORAGE_TAPESORTER_H
+#endif // TAPE_STORAGE_TAPE_SORTER_H

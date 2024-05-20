@@ -6,4 +6,6 @@ add_compile_options(
         -Wall
         -Wextra
         -Wpedantic
+
+        -fno-omit-frame-pointer
 )
