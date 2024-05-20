@@ -10,6 +10,7 @@ using YTape::FileTape;
 
 FileTape::FileTape(const std::string& path)
     : fstream_(path)
+    , path(path)
     , bufferedPos_(-bufferSize)
 {
     if (fstream_.fail())

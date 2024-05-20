@@ -45,6 +45,8 @@ private:
     SizeType position_ {};
     SizeType begin {};
 
+    std::string path;
+
 public:
 
     static constexpr SizeType bufferSize = 16;
