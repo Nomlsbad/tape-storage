@@ -4,7 +4,7 @@ target_link_libraries(${TESTS_NAME}
         PRIVATE
         GTest::gtest
         GTest::gtest_main
-        ${APP_NAME}
+        tape-storage
 )
 
 include(GoogleTest)

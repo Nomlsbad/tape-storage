@@ -1,5 +1,6 @@
 #include "Sorter/TapeSorter.h"
 #include "Tape/FileTape.h"
+#include "Formatter/FileTapeFormatter.h"
 
 #include <iostream>
 
