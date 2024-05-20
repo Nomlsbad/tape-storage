@@ -23,14 +23,16 @@ bool Utility::copy(ITape& src, ITape& dst)
         src.read(value);
         dst.write(value);
 
-        if (!src.hasNext())
+        if (src.hasNext())
+        {
+            src.next();
+            dst.next();
+        }
+        else
         {
             src.rewind();
             dst.rewind();
         }
-
-        src.next();
-        dst.next();
 
     } while (src.getPosition() != startPosition);
 
