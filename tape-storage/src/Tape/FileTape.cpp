@@ -4,13 +4,17 @@
 #include <charconv>
 #include <iomanip>
 #include <iostream>
-#include <limits>
 
 using YTape::FileTape;
 
 FileTape::FileTape(const std::string& path)
+    : FileTape(path, TapeHardwareSimulator::getInstance())
+{}
+
+FileTape::FileTape(const std::string& path, ITapeSimulator& simulator)
     : fstream_(path)
     , path(path)
+    , simulator_(simulator)
     , bufferedPos_(-bufferSize)
 {
     if (fstream_.fail())
@@ -19,8 +23,8 @@ FileTape::FileTape(const std::string& path)
     }
 
     fstream_ >> size_;
-    begin = fstream_.tellp();
-    begin += 1;
+    begin_ = fstream_.tellp();
+    begin_ += 1;
     fstream_ << std::setfill('_') << std::left;
 }
 
@@ -31,6 +35,8 @@ FileTape::~FileTape()
 
 bool FileTape::next()
 {
+    simulator_.shift();
+
     if (!hasNext()) return false;
 
     ++position_;
@@ -39,6 +45,8 @@ bool FileTape::next()
 
 bool FileTape::prev()
 {
+    simulator_.shift();
+
     if (!hasPrev()) return false;
 
     --position_;
@@ -47,6 +55,7 @@ bool FileTape::prev()
 
 void FileTape::rewind()
 {
+    simulator_.rewind(static_cast<size_t>(position_));
     position_ = 0;
 }
 
@@ -62,6 +71,8 @@ bool FileTape::hasPrev() const
 
 bool FileTape::read(int& value)
 {
+    simulator_.read();
+
     updateCache();
     assert(position_ - bufferedPos_ >= 0);
 
@@ -73,6 +84,8 @@ bool FileTape::read(int& value)
 
 void FileTape::write(int value)
 {
+    simulator_.write();
+
     updateCache();
     assert(position_ - bufferedPos_ >= 0);
 
@@ -117,10 +130,9 @@ void FileTape::load(SizeType diff)
         cashed = std::min(bufferSize, size_ - pos);
     }
 
-    fstream_.seekp(begin + pos * wordSize);
     bufferedPos_ = pos;
-
-    for (size_t i = 0; i < cashed; ++i)
+    fstream_.seekp(begin_ + bufferedPos_ * wordSize);
+    for (size_t i = 0; i < static_cast<size_t>(cashed); ++i)
     {
         char number[wordSize];
         fstream_.getline(number, wordSize, delim);
@@ -133,9 +145,8 @@ void FileTape::store()
 {
     if (!modified_) return;
 
-    fstream_.seekp(begin + bufferedPos_ * wordSize);
-
-    for (size_t i = 0; i < cashed; ++i)
+    fstream_.seekp(begin_ + bufferedPos_ * wordSize);
+    for (size_t i = 0; i < static_cast<size_t>(cashed); ++i)
     {
         fstream_ << std::setw(wordSize - 1) << buffer_[i] << "\n";
     }

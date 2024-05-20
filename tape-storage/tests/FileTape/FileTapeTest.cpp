@@ -2,13 +2,16 @@
 #include <array>
 
 #include "Tape/FileTape.h"
+#include "Tape/Simulator/EmptyTapeSimulator.h"
 #include "FileTapeTest.h"
 
 using YTape::FileTape;
+using YTape::EmptyTapeSimulator;
 
 TEST_F(FileTapeTest, PrevReturnsFalseIfTapeDoesntHave)
 {
-    FileTape tape(testTapePath);
+    EmptyTapeSimulator simulator;
+    FileTape tape(testTapePath, simulator);
 
     const bool hasPrev = tape.hasPrev();
     const bool shiftCompleted = tape.prev();
@@ -19,7 +22,8 @@ TEST_F(FileTapeTest, PrevReturnsFalseIfTapeDoesntHave)
 
 TEST_F(FileTapeTest, PrevAndNextReturnTrueIfTapeHas)
 {
-    FileTape tape(testTapePath);
+    EmptyTapeSimulator simulator;
+    FileTape tape(testTapePath, simulator);
 
     const bool hasNext = tape.hasNext();
     const bool shiftNextCompleted = tape.next();
@@ -35,7 +39,8 @@ TEST_F(FileTapeTest, PrevAndNextReturnTrueIfTapeHas)
 
 TEST_F(FileTapeTest, AfterSizeMinusOneStepsCantGoNext)
 {
-    FileTape tape(testTapePath);
+    EmptyTapeSimulator simulator;
+    FileTape tape(testTapePath, simulator);
     size_t steps = 0;
 
     while (tape.next()) { ++steps; }
@@ -47,7 +52,8 @@ TEST_F(FileTapeTest, AfterSizeMinusOneStepsCantGoNext)
 
 TEST_F(FileTapeTest, RewindReturnsToTheBegining)
 {
-    FileTape tape(testTapePath);
+    EmptyTapeSimulator simulator;
+    FileTape tape(testTapePath, simulator);
     constexpr std::array<size_t, 3> stepsAmounts = {1, 2, 4};
     bool rewindsWasCompleted = false;
 
@@ -66,7 +72,8 @@ TEST_F(FileTapeTest, RewindReturnsToTheBegining)
 
 TEST_F(FileTapeTest, WiriteInTape)
 {
-    FileTape tape(writeTestTapePath);
+    EmptyTapeSimulator simulator;
+    FileTape tape(writeTestTapePath, simulator);
     int32_t value = 0;
 
     constexpr std::array answer = {1, 2, 3};
