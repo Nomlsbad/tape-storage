@@ -4,6 +4,7 @@
 #include "ITapeSimulator.h"
 
 #include <chrono>
+#include <string>
 
 namespace YTape
 {
