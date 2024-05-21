@@ -14,6 +14,7 @@ JSON_CONFIG(TapeConfig, "/tape")
 JSON_CONFIG(SystemConfig, "/system")
 {
     config["memory"] = 16; // bytes
+    config["tmpTapes"] = 4;
 }
 
 #endif // TAPE_STORAGE_CONFIGS_H
