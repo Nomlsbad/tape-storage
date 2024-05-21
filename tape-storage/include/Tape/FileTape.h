@@ -18,6 +18,8 @@ public:
     explicit FileTape(const std::string& path);
     FileTape(const std::string& path, ITapeSimulator& simulator);
 
+    FileTape(FileTape&&) noexcept = default;
+
     ~FileTape() override;
 
 public:
