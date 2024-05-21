@@ -5,7 +5,7 @@ add_executable(${APP_NAME}
 set_target_properties(${APP_NAME}
         PROPERTIES
         ENABLE_EXPORTS 1
-        OUTPUT_NAME "tape_sorter"
+        OUTPUT_NAME "tape-sorter"
         RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/bin"
 )
 

@@ -53,7 +53,7 @@ TEST_F(FileTapeFormatterTest, MakeZeroTest)
 
     std::fstream file(path);
     std::string zeroLine(11, '_');
-    zeroLine.front() = '\000';
+    zeroLine.front() = '0';
 
     size_t size = 0;
     file >> size;
