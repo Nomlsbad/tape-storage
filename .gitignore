@@ -33,7 +33,11 @@
 
 # CMake buils files
 *build*
+bin
 
 # IDE files
 .idea/*
 !.idea/cmake.xml
+
+# Temporary tapes
+tape-storage/tests/**/*.txt

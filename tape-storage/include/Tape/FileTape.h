@@ -48,8 +48,6 @@ private:
     SizeType position_ {};
     SizeType begin_ {};
 
-    std::string path;
-
     ITapeSimulator& simulator_;
 
 public:
@@ -72,7 +70,6 @@ private:
      */
 
     using Buffer = std::array<int, bufferSize>;
-    using BufferPointer = Buffer::iterator;
 
     Buffer buffer_ {};
     SizeType bufferedPos_;
