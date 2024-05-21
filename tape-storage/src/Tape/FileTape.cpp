@@ -13,7 +13,6 @@ FileTape::FileTape(const std::string& path)
 
 FileTape::FileTape(const std::string& path, ITapeSimulator& simulator)
     : fstream_(path)
-    , path(path)
     , simulator_(simulator)
     , bufferedPos_(-bufferSize)
 {
