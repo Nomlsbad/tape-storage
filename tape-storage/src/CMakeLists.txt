@@ -2,7 +2,12 @@ add_executable(${APP_NAME}
         ${APP_MAIN}
         ${APP_SOURCES}
 )
-set_target_properties(${APP_NAME} PROPERTIES ENABLE_EXPORTS 1)
+set_target_properties(${APP_NAME}
+        PROPERTIES
+        ENABLE_EXPORTS 1
+        OUTPUT_NAME "tape_sorter"
+        RUNTIME_OUTPUT_DIRECTORY "${PROJECT_SOURCE_DIR}/bin"
+)
 
 target_sources(${APP_NAME} INTERFACE ${APP_SOURCES} PUBLIC ${APP_INCLUDE})
 target_include_directories(${APP_NAME} PUBLIC ${APP_INCLUDE_PATH})

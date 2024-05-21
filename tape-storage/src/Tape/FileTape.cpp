@@ -7,29 +7,41 @@
 
 using YTape::FileTape;
 
-FileTape::FileTape(const std::string& path)
+FileTape::FileTape(const fs::path& path)
     : FileTape(path, TapeHardwareSimulator::getInstance())
 {}
 
-FileTape::FileTape(const std::string& path, ITapeSimulator& simulator)
+FileTape::FileTape(const fs::path& path, ITapeSimulator& simulator)
     : fstream_(path)
     , simulator_(simulator)
     , bufferedPos_(-bufferSize)
 {
     if (fstream_.fail())
     {
-        throw std::invalid_argument("Can't open file: " + path);
+        throw std::invalid_argument("Can't open file: " + path.string());
     }
 
-    fstream_ >> size_;
-    begin_ = fstream_.tellp();
-    begin_ += 1;
+    readSize();
     fstream_ << std::setfill('_') << std::left;
 }
 
 FileTape::~FileTape()
 {
     store();
+}
+
+void FileTape::readSize()
+{
+    char number[21];
+    fstream_.getline(number, 21, delim);
+
+    auto result = std::from_chars(number, number + 21, size_);
+    if (result.ec != std::errc())
+    {
+        throw std::invalid_argument("Wrong tape format!. Can't read size of tape.");
+    }
+
+    begin_ = fstream_.tellp();
 }
 
 bool FileTape::next()
