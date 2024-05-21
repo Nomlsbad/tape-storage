@@ -40,4 +40,4 @@ bin
 !.idea/cmake.xml
 
 # Temporary tapes
-tape-storage/tests/**/*.txt
+tape-storage/tests/*/*/**/*.txt
