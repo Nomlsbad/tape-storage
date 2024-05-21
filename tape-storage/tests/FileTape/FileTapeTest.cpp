@@ -8,7 +8,24 @@
 using YTape::FileTape;
 using YTape::EmptyTapeSimulator;
 
-TEST_F(FileTapeTest, PrevReturnsFalseIfTapeDoesntHave)
+TEST_F(FileTapeTest, FileTapeThrowExceptionIfFileDoesntExist)
+{
+    EmptyTapeSimulator simulator;
+
+    EXPECT_THROW(FileTape tape(".", simulator), std::invalid_argument);
+}
+
+TEST_F(FileTapeTest, SizeEqualsToFirstNumberInFile)
+{
+    EmptyTapeSimulator simulator;
+    FileTape tape(testTapePath, simulator);
+
+    const auto size = tape.getSize();
+
+    EXPECT_EQ(size, 5);
+}
+
+TEST_F(FileTapeTest, IfTapeDoesntHavePrevItReturnsFalse)
 {
     EmptyTapeSimulator simulator;
     FileTape tape(testTapePath, simulator);
@@ -20,7 +37,7 @@ TEST_F(FileTapeTest, PrevReturnsFalseIfTapeDoesntHave)
     EXPECT_FALSE(shiftCompleted);
 }
 
-TEST_F(FileTapeTest, PrevAndNextReturnTrueIfTapeHas)
+TEST_F(FileTapeTest, IfTapeHasPrevOrNextReturnTrue)
 {
     EmptyTapeSimulator simulator;
     FileTape tape(testTapePath, simulator);

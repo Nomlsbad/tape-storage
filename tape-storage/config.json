@@ -6,6 +6,7 @@
     "shiftDelay": 100
   },
   "system": {
-    "memory": 16
+    "memory": 16,
+    "tmpTapes": 4
   }
 }

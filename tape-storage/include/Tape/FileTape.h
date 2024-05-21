@@ -6,6 +6,9 @@
 
 #include <array>
 #include <fstream>
+#include <filesystem>
+
+namespace fs = std::filesystem;
 
 namespace YTape
 {
@@ -15,10 +18,16 @@ class FileTape final: public ITape
 {
 public:
 
-    explicit FileTape(const std::string& path);
-    FileTape(const std::string& path, ITapeSimulator& simulator);
+    explicit FileTape(const fs::path& path);
+    FileTape(const fs::path& path, ITapeSimulator& simulator);
+
+    FileTape(FileTape&&) noexcept = default;
 
     ~FileTape() override;
+
+private:
+
+    void readSize();
 
 public:
 
@@ -48,8 +57,6 @@ private:
     SizeType position_ {};
     SizeType begin_ {};
 
-    std::string path;
-
     ITapeSimulator& simulator_;
 
 public:
@@ -72,7 +79,6 @@ private:
      */
 
     using Buffer = std::array<int, bufferSize>;
-    using BufferPointer = Buffer::iterator;
 
     Buffer buffer_ {};
     SizeType bufferedPos_;
