@@ -43,7 +43,7 @@ TEST_F(FileTapeFormatterTest, MakeEmptyTest)
 
     EXPECT_EQ(size, 5);
     EXPECT_TRUE(allLinesAreEmpty);
-    EXPECT_TRUE(line.empty());
+    EXPECT_TRUE(file.eof());
 }
 
 TEST_F(FileTapeFormatterTest, MakeZeroTest)
@@ -53,7 +53,7 @@ TEST_F(FileTapeFormatterTest, MakeZeroTest)
 
     std::fstream file(path);
     std::string zeroLine(11, '_');
-    zeroLine.front() = '\000';
+    zeroLine.front() = '0';
 
     size_t size = 0;
     file >> size;
@@ -69,7 +69,7 @@ TEST_F(FileTapeFormatterTest, MakeZeroTest)
 
     EXPECT_EQ(size, 8);
     EXPECT_TRUE(allLinesAreZero);
-    EXPECT_TRUE(line.empty());
+    EXPECT_TRUE(file.eof());
 }
 
 TEST_F(FileTapeFormatterTest, MakeRandomTest)
@@ -105,7 +105,7 @@ TEST_F(FileTapeFormatterTest, MakeRandomTest)
 
     EXPECT_EQ(size, 10);
     EXPECT_TRUE(allLinesAreAllowed);
-    EXPECT_TRUE(line.empty());
+    EXPECT_TRUE(file.eof());
 }
 
 TEST_F(FileTapeFormatterTest, MakeFromFileTest)
@@ -138,5 +138,35 @@ TEST_F(FileTapeFormatterTest, MakeFromFileTest)
 
     EXPECT_EQ(size, 7);
     EXPECT_TRUE(allLinesAreCorrect);
-    EXPECT_TRUE(line.empty());
+    EXPECT_TRUE(tape.eof());
+}
+
+TEST_F(FileTapeFormatterTest, MakeFromContainerTest)
+{
+    std::vector numbers = {3, 1, -5, 22, 31, 14, -32, 85, 7, 6};
+    auto path =
+        FileTapeFormatter::makeFromContainer(testDir + "/tapes/fromContainerTape.txt", numbers.begin(), numbers.end());
+    bool allLinesAreCorrect = true;
+
+    std::fstream file(path);
+    std::string zeroLine(11, '_');
+    zeroLine.front() = '0';
+
+    size_t size = 0;
+    file >> size;
+
+    std::string line;
+    std::getline(file, line, FileTape::delim);
+    for (size_t i = 0; i < size; ++i)
+    {
+        int value = 0;
+        std::getline(file, line, FileTape::delim);
+        auto result = std::from_chars(line.data(), line.data() + FileTape::wordSize, value);
+        allLinesAreCorrect &= result.ec == std::errc() && value == numbers[i];
+    }
+    std::getline(file, line, FileTape::delim);
+
+    EXPECT_EQ(size, numbers.size());
+    EXPECT_TRUE(allLinesAreCorrect);
+    EXPECT_TRUE(file.eof());
 }
