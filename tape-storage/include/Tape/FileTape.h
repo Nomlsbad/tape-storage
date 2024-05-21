@@ -23,6 +23,8 @@ public:
 
     FileTape(FileTape&&) noexcept = default;
 
+    FileTape(FileTape&&) noexcept = default;
+
     ~FileTape() override;
 
 private:
