@@ -9,7 +9,7 @@ include(cmake/Testing.cmake)
 add_subdirectory(libs)
 
 include(cmake/MoreWarnings.cmake)
-#include(cmake/Werror.cmake)
+include(cmake/Werror.cmake)
 
 add_subdirectory(tape-storage)
 add_subdirectory(tape-formatter)
