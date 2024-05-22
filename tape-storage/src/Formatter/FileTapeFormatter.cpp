@@ -29,9 +29,9 @@ fs::path FileTapeFormatter::makeZero(const std::string& fileName, size_t size)
     fs::path path = makeFile(fileName);
     std::ofstream file(absolute(path));
 
-    std::string line(FileTape::wordSize, '_');
-    line.front() = 0;
-    line.back() = FileTape::delim;
+    std::stringstream stringstream;
+    stringstream << 0 << std::string(FileTape::wordSize - 2, '_') << "\n";
+    std::string line = stringstream.str();
 
     file << size << "\n";
     std::fill_n(std::ostream_iterator<std::string>(file), size, line);
