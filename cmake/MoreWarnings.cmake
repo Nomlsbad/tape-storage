@@ -10,5 +10,6 @@ add_compile_options(
         -Woverloaded-virtual
         -Wredundant-decls
         -Wsign-conversion
+        -Wno-error=sign-conversion
         -Wsign-promo
 )
