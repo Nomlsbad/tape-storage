@@ -59,6 +59,7 @@ protected:
 
     inline static const std::string testsDir = TESTS_DIR;
     inline static const std::string testDir = testsDir + "/TapeSorter";
+    inline static const std::string tapesDir = testDir + "/tapes";
 
     inline static std::string inputPath;
     inline static std::string outputPath;
