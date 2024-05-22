@@ -93,9 +93,11 @@ private:
     void loadTapes(Iter begin, Iter end)
     {
         ddTape_ = *begin;
+        minTapeSize_ = ddTape_->getSize();
         for (auto it = std::next(begin); it != end; ++it)
         {
             freeTapes_.push(*it);
+            minTapeSize_ = std::min(minTapeSize_, (*it)->getSize());
         }
     }
 
@@ -104,9 +106,11 @@ private:
     void loadTapes(Iter begin, Iter end)
     {
         ddTape_ = &*begin;
+        minTapeSize_ = begin->getSize();
         for (auto it = std::next(begin); it != end; ++it)
         {
             freeTapes_.push(&*it);
+            minTapeSize_ = std::min(minTapeSize_, it->getSize());
         }
     }
 
@@ -120,6 +124,17 @@ public:
      */
     void sort(ITape& in, ITape& out)
     {
+        if (in.getSize() > out.getSize())
+        {
+            throw std::invalid_argument("in size should be less or equal than out size");
+        }
+        if (in.getSize() > minTapeSize_ || out.getSize() > minTapeSize_)
+        {
+            std::stringstream stringstream;
+            stringstream << "tapes sizes should be less or equal than " << minTapeSize_;
+            throw std::invalid_argument(std::move(stringstream).str());
+        }
+
         in.rewind();
         out.rewind();
 
@@ -339,6 +354,7 @@ private:
     Queue mergedTapes_ {};
 
     size_t chunkLimit_ {};
+    size_t minTapeSize_ {};
     std::ptrdiff_t availableTapes_ {};
 
     ITape* ddTape_ {};
