@@ -12,7 +12,8 @@ int main(int argc, char* argv[])
 {
     if (argc != 3)
     {
-        std::cerr << "Invalid input.\n" << "Usage: ./tape_sorter <input-tape-path> <output-tape-path>\n";
+        std::cerr << "Invalid input.\n"
+                  << "Usage: ./tape-sorter <input-tape-path> <output-tape-path>\n";
         return EXIT_FAILURE;
     }
 
@@ -37,13 +38,16 @@ int main(int argc, char* argv[])
 
     std::string resourcesPath = RESOURCES_DIR;
     const size_t tmpTapes = Configuration::get<SystemConfig>("tmpTapes");
-    std::vector<ITape*> tapes(tmpTapes);
+
+    std::vector<FileTape> tapes;
+    tapes.reserve(tmpTapes);
     for (size_t i = 0; i < tmpTapes; ++i)
     {
         std::stringstream stringstream;
         stringstream << resourcesPath << "/tmp/tape-" << i << ".txt";
+
         auto path = FileTapeFormatter::makeEmpty(std::move(stringstream).str(), in.getSize());
-        tapes[i] = new FileTape(path);
+        tapes.emplace_back(path);
     }
 
     try
@@ -57,12 +61,7 @@ int main(int argc, char* argv[])
         std::cerr << e.what() << "\n";
     }
 
-    for (auto& tape: tapes)
-    {
-        delete tape;
-    }
-
     std::cout << "finally, tapes are sorted!";
 
-    return 1;
+    return EXIT_SUCCESS;
 }
