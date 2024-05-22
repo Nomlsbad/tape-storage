@@ -38,10 +38,9 @@ public:
      * @throws std::invalid_argument if chunkLimit less than sizeof(int)
      * or [begin, end) has 3 or less elements.
      *
-     * @tparam Iter at least InputIterator. std::iterator_traits<Iter>::value_type would be casted to ITape*.
+     * @tparam Iter at least InputIterator with value_type is convertible to ITape* or ITape&.
      */
-     // TODO: Add check for tapes sizes
-    template<typename Iter>
+    template<std::input_iterator Iter>
     explicit TapeSorter(Iter begin, Iter end, size_t chunkLimit, Comparator comparator)
         : chunkLimit_(chunkLimit / sizeof(int))
         , availableTapes_(std::distance(begin, end))
@@ -60,11 +59,8 @@ public:
             throw std::invalid_argument(stringstream.str());
         }
 
-        ddTape_ = *begin;
-        for (auto it = std::next(begin); it < end; ++it)
-        {
-            freeTapes_.push(*it);
-        }
+
+        loadTapes(begin, end);
     }
 
     /**
@@ -79,9 +75,9 @@ public:
      * @throws std::invalid_argument if chunkLimit less than sizeof(int)
      * or [begin, end) has 3 or less elements.
      *
-     * @tparam Iter at least InputIterator. std::iterator_traits<Iter>::value_type would be casted to ITape*.
+     * @tparam Iter at least InputIterator with value_type is convertible to ITape* or ITape&.
      */
-    template<typename Iter>
+    template<std::input_iterator Iter>
     requires std::default_initializable<Comparator>
     explicit TapeSorter(Iter begin, Iter end, size_t chunkLimit)
         : TapeSorter(begin, end, chunkLimit, Comparator())
@@ -89,6 +85,30 @@ public:
 
     TapeSorter(const TapeSorter&) = delete;
     TapeSorter& operator= (const TapeSorter&) = delete;
+
+private:
+
+    template<std::input_iterator Iter>
+    requires std::convertible_to<typename std::iterator_traits<Iter>::value_type, ITape*>
+    void loadTapes(Iter begin, Iter end)
+    {
+        ddTape_ = *begin;
+        for (auto it = std::next(begin); it != end; ++it)
+        {
+            freeTapes_.push(*it);
+        }
+    }
+
+    template<std::input_iterator Iter>
+    requires std::convertible_to<typename std::iterator_traits<Iter>::value_type&, ITape&>
+    void loadTapes(Iter begin, Iter end)
+    {
+        ddTape_ = &*begin;
+        for (auto it = std::next(begin); it != end; ++it)
+        {
+            freeTapes_.push(&*it);
+        }
+    }
 
 public:
 
